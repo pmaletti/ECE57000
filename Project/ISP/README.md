@@ -5,18 +5,15 @@
 <h3>ECE 57000: Artificial Intelligence - Final Project</h3>
 
 
-**[Prajna G. Malettira](https://alrightlone.github.io/)**<sup>1</sup>, **[Hesong Wang](https://viridisgreen.github.io/)**<sup>1,2</sup>, **[Mingluo Su](https://github.com/sunshine-0903)**<sup>1</sup>, **[Zefang Wang](https://github.com/aden9460)**<sup>1,2</sup>, **[Huan Wang](https://huanwang.tech/)**<sup>1*</sup>
-
-<sup>1</sup>Westlake University, <sup>2</sup>Zhejiang University
-<br>
-*<sup>*</sup>Corresponding author: wanghuan [at] westlake [dot] edu [dot] cn*
+**[Prajna G. Malettira]**<sup>1</sup>
+<sup>1</sup>Purdue University
 
 </div>
 
 <div align="left">
-  <img src="./figures/teaser.jpg"  width="100%">
+  <img src="ECE57000/figures/teasers.png"  width="100%">
   <br>
-  <em>Qualitative comparison of unstructured pruning methods on the SD3-Medium model. We evaluate Magnitude, DSnoT, Wanda, and our method (OBS-Diff) at various sparsity levels (20%, 30%, 40%, and 50%) using the same prompt and negative prompt. All images are generated at a resolution of 512 x 512.</em>
+  <em>Qualitative comparison of structured pruning methods on the SD3.5-Large model. We evaluate OBS-Diff, and our method (ISP) at various sparsity levels (15%, 20%, 30% and 40%) using the same prompt and negative prompt. All images are generated at a resolution of 1024 x 1024.</em>
 </div>
 
 <br>
