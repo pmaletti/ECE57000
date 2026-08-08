@@ -11,7 +11,7 @@
 </div>
 
 <div align="left">
-  <img src="/home/min/a/pmaletti/Documents/ECE57000/figures/teasers.png"  width="100%">
+  <img src="figures/teasers.png"  width="100%">
   <br>
   <em>Qualitative comparison of structured pruning methods on the SD3.5-Large model. We evaluate OBS-Diff, and our method (ISP) at various sparsity levels (15%, 20%, 30% and 40%) using the same prompt and negative prompt. All images are generated at a resolution of 1024 x 1024.</em>
 </div>
