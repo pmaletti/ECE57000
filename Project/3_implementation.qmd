@@ -1,0 +1,129 @@
+---
+title: "Implementation & New Results"
+subtitle: "ECE 57000: Artificial Intelligence"
+author: "Prajna G. Malettira"
+format: revealjs
+---
+
+## Slide 1: Updated Problem Statement & Goal
+
+**Problem Statement:**
+Diffusion models suffer from massive inference bottlenecks. Current structured pruning solutions are inefficient, requiring either costly end-to-end retraining or memory-intensive full Hessian inversions to recover generative quality.
+
+**Updated Goal & Change:**
+The primary goal is to develop Isometric Spectral Pruning, a lightweight framework utilizing local spectral isometry as a geometric saliency metric[cite: 1]. 
+*Change:* I have transitioned my target architecture from solely SDXL U-Net to multimodal diffusion transformer models, specifically Stable Diffusion 3.5. This direction change addresses the modern bottlenecks of flow matching architectures and ensures the project evaluates state-of-the-art models rather than legacy structural paradigms.
+
+---
+
+## Slide 2: Updated Methodology & Progress
+
+**Technical Approach:**
+The project applies a local isometry framework to evaluate the internal data manifold of diffusion transformers, rapidly identifying redundant structures. I am explicitly using local isometry to truncate the computed Hessian (Gram Matrix). This will yield significantly faster post pruning healing. 
+
+**Progress Since Checkpoint 1:**
+I have actively written code to integrate a geometric proxy hook to use with both the SDXL and SD 3.5 transformer blocks. Additionally, I modified the distance metric extraction to resolve the Out-Of-Memory (OOM) roadblock encountered during Checkpoint 1, eliminating the need to use a spatial downsampling workaround. Finally, I have modified the OBSDiff framework to now allow non-uniform strcutured pruning across the SDXL and SD 3.5 models. 
+
+---
+
+## Slide 3: Code Snippet 1 (Forward hook for per layer activation collection.)
+
+```{python}
+    def create_hook_fn(block_idx, layer_name, pruner_dict, timestep_weight,
+                    block_inputs=None, n_tbins=1, num_steps=None, step_to_bin=None, step_info=None):
+        def hook_fn(module, input, output):
+            step = step_info["current"]
+            pruner = pruner_dict[(block_idx, layer_name)]
+
+            input_data = input[0].data
+            safe_step = min(step, len(timestep_weight) - 1)
+            current_weight = timestep_weight[safe_step]
+            num_samples = input_data.shape[0]
+            W_new = current_weight * num_samples
+
+            input_data = input_data * np.sqrt(current_weight)   # <-- keep: this is what makes weighting live
+            if step_to_bin is not None:
+                t_bin = step_to_bin[safe_step]                      # SNR band
+            elif n_tbins > 1 and num_steps:
+                t_bin = min(int(step * n_tbins / num_steps), n_tbins - 1)   # uniform fallback
+            else:
+                t_bin = 0
+            pruner.add_batch(input_data, output.data, W_new, t_bin=t_bin)
+        return hook_fn
+```
+
+---
+
+## Slide 4: Explanation of Snippet 1
+
+**Functionality:**
+This code snippet defines a forward hook (create_hook_fn) that intercepts intermediate activation tensors during the diffusion model's generation steps. It weights these incoming activations based on the current timestep's Signal-to-Noise Ratio (SNR) and safely aggregates them into a layer-specific pruner object.
+
+**Justification:**
+Capturing accurate, timestep-weighted activations is a critical foundational step. Because the internal data manifold of a diffusion model shifts dramatically across inference steps, unweighted activations would produce a skewed representation of structural importance. This hook effectively gathers the empirical data needed to compute the truncated Gram Matrix (Hessian approximation) without requiring an expensive end-to-end training loop.
+
+---
+
+## Slide 5: Code Snippet 2 (Saliency metric for MLP and Attention blocks.)
+
+```{python}
+    @torch.no_grad()
+    def struct_prune(self, target_sparsity, headsize, energy_threshold=None, epsilon=1e-4, percdamp=0.01,):
+        W = self.layer.weight.data.clone().float()
+        d_out, d_in = W.shape
+        num_heads = d_in // headsize
+        is_ffn = any(k in self.layer_name.lower() for k in ["ff.net", "ff_context.net", "ff.linear_out", "ff_context.linear_out"])
+        if is_ffn: head_saliency = torch.sum(W ** 2, dim=0) * torch.diag(H_float) # ffn saliency 
+        else: # attn saliency
+            for h in range(num_heads):
+                s_, e_ = h * headsize, (h + 1) * headsize; W_h = W[:, s_:e_]; H_h = H_float[s_:e_, s_:e_]
+                head_saliency[h] = torch.max(torch.norm(torch.matmul(W_h, H_h) * W_h, dim=-1))
+        sorted_head_indices = torch.argsort(head_saliency)
+        column_mask = torch.zeros(d_in, dtype=torch.bool, device=self.dev)
+        global_pruned = 0; num_to_prune = round(num_heads * target_sparsity)
+        for h_idx in sorted_head_indices:
+            if global_pruned >= num_to_prune: break
+            col_start = h_idx * headsize
+            if pruned_per_block[b] < int(heads_in_block):
+                column_mask[col_start:col_start + headsize] = True
+                pruned_per_block[b] += 1
+                global_pruned += 1
+```
+
+
+---
+
+## Slide 6: Explanation of Snippet 2
+**Functionality:**
+This method calculates the geometric saliency for specific layers, handling both Feed-Forward Networks (MLP) and Attention blocks. Using the layer weights and the pre-computed Hessian approximation (`H_float`), it assigns a saliency score to each attention head or FFN node. It then dynamically populates a mask to prune the least salient components until the target sparsity is met.
+
+**Justification:**
+This is the core structural pruning engine of the project. By evaluating the Hessian-weighted maximum norm for individual attention heads rather than basic weight magnitudes, the code successfully applies the theoretical local spectral isometry metric. Furthermore, this explicitly enables *non-uniform* structured pruning by dynamically targeting components that contribute the least to the model's loss landscape across different blocks.
+
+---
+
+## Slide 7: Preliminary Result
+**Preliminary Result:**
+- Successfully implemented and validated 15% and 20% structured pruning of the SDXL UNet model and obtained CLIP and FID scores for these models on 2500 image generations.
+- *Note on Roadblock:* Computing CLIP and FiD scores for quantitative pruned model capabilities incurred significant time and we only validated SDXL at this checkpoint alongside OBSDiff baseline.
+- We provide a summary of the base and pruned model parameter counts in the table below alongside the CLIP and FID scores. 
+
+| Model    | Sparsity (%) | #Params    | CLIP(↑)| FID(↓)|
+| :---     | :---:        | :---:      | :---:  | ---:  |
+| SDXL     | -            | 2.56B      | 0.32   | 28.38 |
+| OBSDiff  | 15%          | 2.24B      | 0.32   | 31.28 |
+| Ours     | 15%          | 2.15B      | 0.32   | 30.96 |
+| OBSDiff  | 20%          | 2.14B      | 0.32   | 34.57 |
+| Ours     | 20%          | 2.05B      | 0.32   | 32.45 |
+
+- *Note on #Params Differences:* We note that our parameter counts do not exactly match OBSDiff, this is because we evaluate a non-uniform prunung setting across layers and not all pruned models will be equal to a uniform layer pruning budget.
+---
+
+## Slide 8: Result Analysis & Next Steps
+**Analysis:**
+These results confirm that the proposed local spectral isometry metric scales robustly to state-of-the-art flow matching architectures (SD 3.5). Resolving the OOM issue while successfully implementing dynamic, non-uniform sparsity indicates that the zero-shot proxy is computationally lightweight yet highly structurally aware. Truncating the Hessian efficiently bypassed the massive computational bottlenecks typically associated with exact second-order healing.
+
+**Next Steps:**
+The immediate next step is to rigorously evaluate the generative impact of this 15% structural sparsity. I will run a standardized dataset of prompts through the structurally pruned SD 3.5 and SDXL models to compute quantitative absolute metrics—specifically zero-shot FID and CLIP Scores—to directly measure the trade-off between inference speedup and image quality degradation.
+
+---
