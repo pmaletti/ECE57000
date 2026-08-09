@@ -8,7 +8,7 @@ import torch
 # torch.backends.cuda.enable_mem_efficient_sdp(False)
 # torch.backends.cuda.enable_math_sdp(True)
 
-from lib.ricci_prune import prune_SD_3_5_Structured, prune_SD_XL_Structured, check_sparsity, check_size
+from ECE57000.Project.ISP.lib.ISP_prune import prune_SD_3_5_Structured, prune_SD_XL_Structured, check_sparsity, check_size
 from lib.prune import prune_OBS_Diff, prune_OBS_Diff_Structured, prune_OBS_Diff_Structured_SDXL
 
 from diffusers import StableDiffusion3Pipeline, StableDiffusionXLPipeline, AutoPipelineForText2Image
@@ -1220,7 +1220,7 @@ def main():
             # ─── COLLECT-ONLY: one dense pass, save Grams, exit ───────────────
             if args.collect_grams_only:
                 from lib.dataloader import get_loaders 
-                from lib.ricci_prune import find_layers, get_module_by_name, callback_on_step_end
+                from ECE57000.Project.ISP.lib.ISP_prune import find_layers, get_module_by_name, callback_on_step_end
 
                 step_info = {"current": 0}
                 assert args.grams_path, "--grams_path required with --collect_grams_only"
