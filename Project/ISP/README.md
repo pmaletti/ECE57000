@@ -11,7 +11,7 @@
 </div>
 
 <div align="left">
-  <img src="figures/teasers.png"  width="100%">
+  <img src="./figures/teasers.png"  width="100%">
   <br>
   <em>Qualitative comparison of structured pruning methods on the SD3.5-Large model. We evaluate OBS-Diff, and our method (ISP) at various sparsity levels (15%, 20%, 30% and 40%) using the same prompt and negative prompt. All images are generated at a resolution of 1024 x 1024.</em>
 </div>
@@ -47,36 +47,6 @@ bash ./scripts/prune_Structured.sh
 
 + Run Eval
 ```bash
-bash ./scripts/OBS_Diff_Unstructured.sh
+bash ./scripts/eval_prune.sh
 ```
 > Note: You need to change the path to the models and calibration dataset in the scripts and codes.
-
-
-
-# Contact
-
-If you have any questions, please contact us at [zhujunhan@westlake.edu.cn](mailto:zhujunhan@westlake.edu.cn).
-
-# Acknowledgments
-
-We thank the following projects for their contributions to the development of OBS-Diff:
-[SparseGPT](https://github.com/IST-DASLab/sparsegpt),
-[Wanda](https://github.com/locuslab/wanda),
-[DSnoT](https://github.com/zyxxmu/DSnoT),
-[EcoDiff](https://github.com/YaNgZhAnG-V5/EcoDiff),
-[SlimGPT](https://openreview.net/forum?id=MxF0IKJtKW&referrer=%5Bthe%20profile%20of%20Qingwen%20Liu%5D(%2Fprofile%3Fid%3D~Qingwen_Liu2)),
-[DepGraph](https://github.com/VainF/Torch-Pruning),
-[Diff-Pruning](https://github.com/VainF/Diff-Pruning).
-
-
-# Citation
-If you find this work useful, please consider citing:
-
-```bibtex
-@article{zhu2025obs,
-  title={OBS-Diff: Accurate Pruning For Diffusion Models in One-Shot},
-  author={Zhu, Junhan and Wang, Hesong and Su, Mingluo and Wang, Zefang and Wang, Huan},
-  journal={arXiv preprint arXiv:2510.06751},
-  year={2025}
-}
-```
