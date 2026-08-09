@@ -42,7 +42,7 @@ This step ensures the data is correctly tokenized and organized to facilitate ac
 
 + Structured Pruning
 ```bash
-bash ./scripts/OBS_Diff_Unstructured.sh
+bash ./scripts/prune_Structured.sh
 ```
 
 + Run Eval
